@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head> 
+  <title>u-stats</title>
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <meta  charset="UTF-8">
+  <link rel="stylesheet" href="static/bootstrap-3.3.5-dist/css/bootstrap.min.css">
+</head>
+<style>
+
+body {
+	height: 100%;
+}
+.vertical-center {
+				position: absolute;
+				top: 45%;
+				transform: translateY(-45%);
+}
+</style>
+<body style="text-align: center;">
+
+<div class="container-fluid">
+<div class="vertical-center">
+  <img src="static/logo.png">
+  <h2>reddit user analytics</h2>
+  <br>
+<div class="row-center" style="padding-left: 25%; padding-right: 25%;">
+  <form action="stats" method="GET">
+    <div class="input-group">
+      <span class="input-group-addon" id="user">/u/</span>
+      <input type="text" class="form-control" placeholder="Username" type="text" name="username">
+      <span class="input-group-btn">
+        <button class="btn btn-default" type="submit">Search</button>
+      </span>
+      </div>
+  </form>
+</div>
+
+<br>
+<h3>{{message}}</h3>
+<br>
+<br>
+
+</div>
+</div>
+<div class="navbar navbar-default navbar-fixed-bottom" style="background: white; text-align: center;">
+	<h2 style="font-size: 10px;">Rasmus Heikkilä, 2015 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
+</div>
+
+<script src="static/js/jquery-1.11.3.min.js"></script>
+<script src="static/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<title>u-stats</title>
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+<meta charset="UTF-8">
+<link rel="stylesheet" href="static/bootstrap-3.3.5-dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="static/font-awesome-4.4.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="static/plotcss.css">
+<script src="static/js/jquery-1.11.3.min.js"></script>
+<script src="static/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+<script src="static/js/d3.min.js"></script>
+<script src="static/js/radar-chart.min.js"></script>
+<script src="static/js/d3.layout.cloud.js"></script>
+<script src="static/js/d3-tip.js"></script>
+<script src="static/js/plotlib.js"></script>
+</head>
+
+<body style="text-align: center;">
+<div class="row-center" style="padding-left: 25%; padding-right: 25%; padding-top: 10px; padding-bottom: 5px;">
+	<form action="stats" method="GET">
+      <div class="input-group">
+        <span class="input-group-addon" id="user">/u/</span>
+        <input type="text" class="form-control" placeholder="Username" type="text" name="username">
+        <span class="input-group-btn">
+        <button class="btn btn-default" type="submit">Search</button>
+        </span>
+	  </div>
+	</form>
+</div>
+
+<div>
+  <h1 style="font-size: 50px;">Stats for /u/{{user}}</h1>
+  <h2 style="font-size: 20px;">based on the {{postcount}} most recent posts</h2>
+  <h2 style="font-size: 20px;">{{errormessage}}</h2>
+</div>
+<br>
+<div class="container">
+  <div class="row-fluid-5">
+    <div class="span2">
+	  <p class="text-muted">Account created</p>
+	  <p><strong>{{account_created}}</strong></p>
+	</div>
+	<div class="span2">
+	  <p class="text-muted">Data available from</p>
+	  <p><strong>{{oldest_post_date}}</strong></p>
+	</div>
+	<div>
+	  <div class="span2">
+	    <p class="text-muted">Total karma
+		  <i class="text-muted fa fa-exclamation-circle" data-toggle="tooltip" data-placement="right" title 
+		  data-original-title="Sum of individual post scores. Karma reported by reddit may be different."></i>
+		</p>
+		<p><strong>{{total_karma}}</strong></p>
+	  </div>
+	<div class="span2">
+	  <p class="text-muted">Words per post</p>
+	  <p><strong>{{words_per_post}}</strong></p>
+	</div>
+	<div class="span2">
+	  <p class="text-muted">Karma per word</p>
+	  <p><strong>{{karma_per_word}}</strong></p>
+	</div>
+  </div>
+</div>
+<hr>
+<div>
+<h2 style="font-size: 30px;">Subreddits</h2>
+  <select id="selector">
+    <option value="count">Posts</option>
+    <option value="score">Average score</option>
+  </select>
+  <div id="barplot" class="graph"></div>
+</div>
+<hr>
+<br>
+<br>
+<div>
+  <div id="postplot" class="graph"></div>
+  <h2 style="font-size: 30px;">Average post score is {{avgscore}}</h2>
+</div>
+<br>
+<hr>
+<br>
+<div>
+  <h2 style="font-size: 30px;">Distribution of posts by day and hour
+  <i class="text-muted fa fa-exclamation-circle" style="font-size: 15px;" data-toggle="tooltip" data-placement="right" title 
+		  data-original-title="Time is your local time."></i></h2>
+  <br>
+  <div id="radar" class="graph"></div>
+</div>
+<hr>
+<br>
+<div>
+	<br>
+	<h2 style="font-size: 30px;">Words appearing in posts</h2>
+	<div id="cloud" class="graph"></div>
+</div>
+<br>
+<hr>
+<div class="footer">
+	<h2 style="font-size: 10px;">Rasmus Heikkilä, 2015 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
+</div>
+
+
+
+<script>
+// Initialize tooltips
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip(); 
+});
+
+// Draw plot for subreddit stats
+var subreddits = {{subreddits|tojson|safe}};
+barplot(subreddits);
+
+// Draw plot for post stats
+var posts = {{posts|tojson|safe}};
+postplot(posts);
+
+var daydata = {{daydata|safe}};
+var hourdata = {{hourdata|safe}};
+
+// Hours are in UTC, change them to the client's time zone
+var parseDate = d3.time.format("%H:%M");
+var hrs = -(new Date().getTimezoneOffset() / 60);
+for (i=0, len = hourdata[0].axes.length; i < len; i++) {
+	var utchour = parseDate.parse(hourdata[0].axes[i].axis);
+	utchour.setHours((utchour.getHours() + hrs)%24);
+	hourdata[0].axes[i].axis = parseDate(utchour);
+}
+// Reverse the data because radar-chart plots it CCW
+hourdata[0].axes = hourdata[0].axes.reverse();
+daydata[0].axes = daydata[0].axes.reverse();
+
+var radarwidth = 350,
+	radarheight = 350;
+var cfg = {
+	w: radarwidth,
+	h: radarheight,
+	levels: 5,
+	};
+
+var radar = RadarChart.chart();
+radar.config(cfg);
+var svg = d3.select("#radar").append("svg")
+		.attr("width", cfg.w * 2 + 150)
+		.attr("height", cfg.h * 1.25);
+
+function render() {
+	var plot = svg.selectAll("g.plot").data([daydata, hourdata]);
+	plot.enter().append('g').classed('plot', 1);
+	plot.attr("transform", function(d,i) {return "translate(" + (20 + (i * (100 + cfg.w))) + "," + 20 + ")"; })
+	.call(radar);
+}
+render();
+
+var wordcount = {{wordcount|tojson|safe}};
+wordcloud(wordcount);	
+
+
+</script>
+</body>		
+</html>
