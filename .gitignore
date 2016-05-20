@@ -1,2 +1,5 @@
 venv
+syslog.log
 *.pyc
+.project
+.pydevproject
