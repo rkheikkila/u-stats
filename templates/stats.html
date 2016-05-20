@@ -32,32 +32,44 @@
 <div>
   <h1 style="font-size: 50px;">Stats for /u/{{user}}</h1>
   <h2 style="font-size: 20px;">based on the {{postcount}} most recent posts</h2>
-  <h2 style="font-size: 20px;">{{errormessage}}</h2>
 </div>
 <br>
 <div class="container">
-  <div class="row-fluid-5">
-    <div class="span2">
+  <div class="row-fluid">
+    <div class="col-md-2">
+	  <p class="text-muted">Data last refreshed</p>
+	  <div class="row">
+		<div class="col-md-5 col-md-offset-1">
+		  <form action="refresh" method="GET">
+		    <input type="hidden" name="username" value="{{user}}">
+		    <button class="btn btn-primary btn-xs" type="submit">Refresh</button>
+	      </form>
+		</div>
+		<div class="col-md-5">
+	       <p><strong>{{refreshed}}</strong></p>
+	    </div>
+	  </div>
+	</div>
+    <div class="col-md-2">
 	  <p class="text-muted">Account created</p>
 	  <p><strong>{{account_created}}</strong></p>
 	</div>
-	<div class="span2">
+	<div class="col-md-2">
 	  <p class="text-muted">Data available from</p>
 	  <p><strong>{{oldest_post_date}}</strong></p>
 	</div>
-	<div>
-	  <div class="span2">
+	  <div class="col-md-2">
 	    <p class="text-muted">Total karma
 		  <i class="text-muted fa fa-exclamation-circle" data-toggle="tooltip" data-placement="right" title 
 		  data-original-title="Sum of individual post scores. Karma reported by reddit may be different."></i>
 		</p>
 		<p><strong>{{total_karma}}</strong></p>
 	  </div>
-	<div class="span2">
+	<div class="col-md-2">
 	  <p class="text-muted">Words per post</p>
 	  <p><strong>{{words_per_post}}</strong></p>
 	</div>
-	<div class="span2">
+	<div class="col-md-2">
 	  <p class="text-muted">Karma per word</p>
 	  <p><strong>{{karma_per_word}}</strong></p>
 	</div>
@@ -71,13 +83,14 @@
     <option value="score">Average score</option>
   </select>
   <div id="barplot" class="graph"></div>
+  <h2 style="font-size: 30px;">Average post score is {{avgscore}}</h2>
 </div>
+<br>
 <hr>
 <br>
-<br>
 <div>
-  <div id="postplot" class="graph"></div>
-  <h2 style="font-size: 30px;">Average post score is {{avgscore}}</h2>
+  <h2 style="font-size: 30px;">Activity over last 90 days</h2>
+  <div id="activityplot" class="graph"></div>
 </div>
 <br>
 <hr>
@@ -99,7 +112,7 @@
 <br>
 <hr>
 <div class="footer">
-	<h2 style="font-size: 10px;">Rasmus Heikkilä, 2015 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
+	<h2 style="font-size: 10px;">Rasmus Heikkilä, 2016 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
 </div>
 
 
@@ -116,7 +129,7 @@ barplot(subreddits);
 
 // Draw plot for post stats
 var posts = {{posts|tojson|safe}};
-postplot(posts);
+activityPlot(posts);
 
 var daydata = {{daydata|safe}};
 var hourdata = {{hourdata|safe}};
