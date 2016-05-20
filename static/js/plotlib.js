@@ -96,127 +96,124 @@ function barplot(data) {
 }
 
 
-// Function for drawing a line/area graph from post scores.
-function postplot(posts) {
-	
-	var graph = d3.select("#postplot"),
-		margin = {top: 20, right: 30, left: 40, bottom: 40},
-		width = 880 - margin.right - margin.left,
-		height = 500 - margin.top - margin.bottom;
-		
-	var num = "score";
-	
-	// Get domain for x-axis
-	var xDomain = []
-	for (i in posts) {
-		xDomain.push(posts[i]["data"]["created_utc"]);
-	}
-		
-	var x = d3.scale.ordinal()
-			.rangePoints([0, width])
-			.domain(xDomain);
-			
-	var extent = d3.extent(posts, (function(d) { return d.data[num]; }));
-			
-	var y = d3.scale.linear()
-			.range([height, 0])
-			.domain(extent);
-			
-	var xAxis = d3.svg.axis()
-			.scale(x)
-			.orient("bottom");
-			
-	var yAxis = d3.svg.axis()
-			.scale(y)
-			.orient("left");
-			
-	var area = d3.svg.area()
-			.x(function(d) { return x(d.data.created_utc); })
-			.y0(height)
-			.y1(function(d) { return y(d.data[num]); })
-			.interpolate("monotone");
+function addDays(date, days) {
+    var dat = new Date(date);
+    dat.setDate(date.getDate() + days);
+    return dat; 
+} // From: http://stackoverflow.com/questions/563406/add-days-to-datetime
 
-	var line = d3.svg.line()
-			.x(function(d,i) { return x(d.data.created_utc); })
-			.y(function(d) { return y(d.data[num]); })
-			.interpolate("monotone");
-			
-	var svg = graph.append("svg")
-			.attr("width", width + margin.left + margin.right)
-			.attr("height", height + margin.top + margin.bottom)
-		  .append("g")
-			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-			
-	var tooltip = d3.tip()
-				.attr("class", "d3-tip")
-				.offset([-10, 0])
-				.html(function(d) {return parseHTML(d); });
-					
-	svg.call(tooltip);
+// Recent activity graph inspired by Github commit chart
+function activityPlot(posts) {
 	
-	function parseHTML(d) {
-		return '<a href= "' + getLink(d) + '" target="_blank">' + 
-				d.data.created_utc +
-				"</a>" + 
-				"<br> Score: " + d.data[num];				
+	var size = 90;
+	var today = new Date(),
+		start = addDays(today, -size);
+		
+	var calendar = [];
+	var col = 0;
+	
+	for (i=0; i <= size; i++) {
+		var date = addDays(start, i);
+		
+		// get day of week
+		var c = date.getDay();
+		
+		// If sunday and we have already inserted a value, change column
+		if (c===0 && i > 0) {
+			col++;
+		}
+		
+		// Initialize data element
+		calendar.push({
+			date: date,
+			count: 0,
+			col: col
+		});
 	}
 	
-	function getLink(e) {
-		if (e.kind == "t3") {
-			return e.data.url;
-		} else {
-			return "http://www.reddit.com/comments/" + e.data.link_id.slice(3) + "/_/" + e.data.id;
+	var margin = {top: 20, right: 30, left: 40, bottom: 40},
+	    cellSize = 30,
+		width = (cellSize * size / 7) + 2*cellSize;
+		height = cellSize * 7;
+	
+	var dateFormat = d3.time.format("%d/%m/%y");
+	
+	var color = d3.scale.threshold()
+				.domain([1, 5, 10, 50, 100, 500, 1000])
+				.range(["white", "#eff3ff" , "#c6dbef", "#9ecae1", 
+						"#6baed6", "#4292c6", "#2171b5" , "#084594"]);
+				
+				
+	var svg = d3.select("#activityplot").append("svg")
+			  .attr("width", width + margin.left + margin.right)
+			  .attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			  
+	var tooltip = d3.tip().attr("class", "d3-tip").offset([-10, 0]).html( function(d) {
+		return "<strong>" + dateFormat(d.date) + "</strong><br>" + "Karma: " + d.count;
+	});
+	svg.call(tooltip);
+			  
+	
+	// Get post scores for each day
+	var scoresPerDay = {}
+	var postCount = posts.length;
+	for (i=0; i < postCount; i++) {
+		var postDate = posts[i].data.created_utc;
+		if (!scoresPerDay[postDate]) {
+			scoresPerDay[postDate] = 0;
+		}
+		scoresPerDay[postDate] += posts[i].data.score;
+	}
+	
+	// Match gathered scores with graph elements
+	for (i=0; i <= size; i++) {
+		if (scoresPerDay[dateFormat(calendar[i].date)]){
+			calendar[i].count = scoresPerDay[dateFormat(calendar[i].date)];
 		}
 	}
-			
-	svg.append("g")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis)
-	  .selectAll("text")
-		.attr("x", 8)
-		.attr("y", 10)
-		.attr("dy", ".70em")
-		.attr("transform", "rotate(-40)")
-		.style("text-anchor", "end");
-		
-	svg.append("g")
-		.attr("class", "y axis")
-		.call(yAxis)
-	  .append("text")
-		.attr("transform", "rotate(-90)")
-		.attr("y", 6)
-		.attr("dy", ".71em")
-		.style("text-anchor", "end")
-		.text("Score");
-		
-	svg.append("path")
-		.datum(posts)
-		.attr("class", "area")
-		.attr("d", area);
-		
-	svg.append("path")
-		.datum(posts)
-		.attr("class", "line")
-		.attr("d", line);
 	
-	svg.selectAll(".dot")
-		.data(posts)
-	  .enter().append("circle")
-		.attr("class", "dot")
-		.attr("cx", line.x())
-		.attr("cy", line.y())
-		.attr("r", 3)
+	// Prepare the graph
+	svg.selectAll(".day")
+		.data(calendar)
+		.enter()
+	  .append("rect")
+		.attr("class","day")
+		.attr("width", cellSize)
+		.attr("height", cellSize)
+		.attr("x", function(d,i) { return d.col * cellSize;})
+		.attr("y", function(d,i) { return d.date.getDay() * cellSize;})
+		.attr("fill", function(d,i) { return color(d.count);})
 		.on("mouseover", function(d) {
-		  tooltip.show(d);
+			tooltip.attr("class", "d3-tip animate").show(d)
 		})
 		.on("mouseout", function(d) {
-			d3.selectAll(".d3-tip").transition()
-			.delay(1500)
-			.duration(200)
-			.style("opacity", 0)
-			.style("pointer-events", "none");
+			tooltip.attr("class", "d3-tip animate").show(d)
+			tooltip.hide()
 		});
+		
+	svg.append('text')
+		.text('T')
+		.style('fill','#ccc')
+		.attr('text-anchor','middle')
+		.attr('dx','-20')
+		.attr('dy', cellSize + margin.top);
+
+	svg.append('text')
+		.text('T')
+		.style('fill','#ccc')
+		.attr('text-anchor','middle')
+		.attr('dx','-20')
+		.attr('dy', 3 * cellSize + margin.top);
+
+	svg.append('text')
+	    .text('S')
+	    .attr('text-anchor','middle')
+	    .style('fill','#ccc')
+	    .attr('dx','-20')
+	    .attr('dy', 5 * cellSize + margin.top);
+	
 }
 
 
