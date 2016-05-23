@@ -38,13 +38,13 @@ if not MONGO_URL:
 app = Flask(__name__)
 
 client = MongoClient(MONGO_URL)
-db = client.user_docs
+db = client.get_default_database()
 coll = db.docs
 coll.create_index("username")
 logger.info("DB connection established to %s", MONGO_URL)
 
-CLIENT_ID = os.environ.get('CLIENT_ID')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+os.environ.get('CLIENT_ID')
+os.environ.get('CLIENT_SECRET')
 post_limit = 100
 word_count_limit = 50
 
@@ -243,7 +243,7 @@ class RedditStats():
             else:
                 return self.retrieve_data(username, retries=retries-1)
         except Exception as e:
-            logger.error("Auth error: %s", str(e))
+            logger.error("Error retrieving data: %s", str(e))
             return self.retrieve_data(username, retries=retries-1)
         
     
