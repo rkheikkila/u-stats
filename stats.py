@@ -43,8 +43,8 @@ coll = db.docs
 coll.create_index("username")
 logger.info("DB connection established to %s", MONGO_URL)
 
-CLIENT_ID = os.environ.get('CLIENT_ID')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+os.environ.get('CLIENT_ID')
+os.environ.get('CLIENT_SECRET')
 post_limit = 100
 word_count_limit = 50
 
