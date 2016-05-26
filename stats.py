@@ -92,6 +92,7 @@ def parse_date(secs):
     date = datetime.datetime.fromtimestamp(secs, datetime.timezone.utc)
     return date.strftime("%d/%m/%y")
     
+    
 def analyze(data):
     """
     Compute some stats from the reddit posts and add them
@@ -175,7 +176,7 @@ class RedditStats():
         
     def auth(self, retries=2):
         """
-        Authenticates/reauthenticates with reddit API.
+        Authenticates with reddit API. The access token is valid for 60 minutes.
         Returns boolean based auth on success.
         """
         if retries == 0:
@@ -237,9 +238,11 @@ class RedditStats():
             return data
         
         except requests.exceptions.HTTPError as e:
-            code = e.userdata.status_code
+            code = e.response.status_code
             if code == 401:
                 return self.retrieve_data(username, retries=retries-1, force_reauth=True)
+            elif code == 404:
+                return None
             else:
                 return self.retrieve_data(username, retries=retries-1)
         except Exception as e:
@@ -255,7 +258,7 @@ class RedditStats():
         def write_to_db(username):
             data = self.retrieve_data(username)
             if not data:
-                return "Failed to retrieve data from reddit!"    
+                return "Failed to retrieve data! Does the username even exist?"    
             try:
                 data["posts"]
             except KeyError:
