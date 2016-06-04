@@ -1,6 +1,6 @@
 """
 reddit user-analytics app providing insights on how user spends time on reddit.
-Author: Rasmus Heikkila 2015
+Author: Rasmus Heikkila 2016
 """
 
 
@@ -18,6 +18,7 @@ import re
 import requests
 import sys
 import time
+
 
 logFormatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
@@ -45,7 +46,7 @@ logger.info("DB connection established to %s", MONGO_URL)
 
 CLIENT_ID = os.environ.get('CLIENT_ID')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-post_limit = 100
+post_limit = 500
 word_count_limit = 50
 
 
@@ -215,19 +216,31 @@ class RedditStats():
             self.auth()
         
         url = "https://oauth.reddit.com/user/" + username
-        p = {"limit": post_limit}
+        posts_per_request = 100
+        p = {"limit": posts_per_request}
+        posts = []
+        posts_received = 0
     
         try:
             r_info = requests.get(url + "/about", headers=self.headers, timeout=3)
-            r_posts = requests.get(url + "/overview", headers=self.headers, params=p, timeout=3)
             r_info.raise_for_status()
-            r_posts.raise_for_status()
             user_info = r_info.json()["data"]
-            posts = None
-            try:
-                posts = r_posts.json()["data"]["children"] 
-            except:
-                pass # There might be no posts, handle later
+            
+            while posts_received < post_limit:
+                r_posts = requests.get(url + "/overview", headers=self.headers, params=p, timeout=3)
+                r_posts.raise_for_status()
+                
+                post_batch = r_posts.json()["data"]["children"]
+                posts.extend(post_batch)
+                
+                # Add name of last post to params to get next set of posts 
+                p["after"] = post_batch[-1]["data"]["name"] 
+                
+                l = len(post_batch)
+                posts_received += l
+                
+                if l < posts_per_request:
+                    break
             
             data = {"info": user_info,
                     "username": username,
@@ -245,6 +258,13 @@ class RedditStats():
                 return None
             else:
                 return self.retrieve_data(username, retries=retries-1)
+        except KeyError:
+            """
+            If we don't get HTTP error and end up here, 
+            most likely posts are missing.
+            Catch this in handle_data function for proper error messaging
+            """
+            raise
         except Exception as e:
             logger.error("Error retrieving data: %s", str(e))
             return self.retrieve_data(username, retries=retries-1)
@@ -256,13 +276,13 @@ class RedditStats():
         attempts to retrieve data from mongoDB before connecting to reddit API.
         """
         def write_to_db(username):
-            data = self.retrieve_data(username)
-            if not data:
-                return "Failed to retrieve data! Does the username even exist?"    
             try:
-                data["posts"]
+                data = self.retrieve_data(username)
             except KeyError:
-                return "No posts were found :("
+                return "No posts were found!"
+            
+            if not data:
+                return "Failed to retrieve data! Does the username even exist?"           
             
             data = analyze(data)
             res = coll.replace_one({"username": username}, data, upsert=True)
