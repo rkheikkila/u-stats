@@ -1,5 +1,5 @@
 // Data visualizing functions collection
-// Rasmus Heikkilä, 2015
+// Rasmus Heikkilä, 2016
 
 // Plots subreddit bar graph
 function barplot(data) {
@@ -217,6 +217,44 @@ function activityPlot(posts) {
 }
 
 
+function radarchart(daydata, hourdata) {
+
+	// Hours are in UTC, change them to the client's time zone
+	var parseDate = d3.time.format("%H:%M");
+	var hrs = -(new Date().getTimezoneOffset() / 60);
+	for (i=0, len = hourdata[0].axes.length; i < len; i++) {
+		var utchour = parseDate.parse(hourdata[0].axes[i].axis);
+		utchour.setHours((utchour.getHours() + hrs)%24);
+		hourdata[0].axes[i].axis = parseDate(utchour);
+	}
+	
+	// Reverse the data because radar-chart plots it CCW
+	hourdata[0].axes = hourdata[0].axes.reverse();
+	daydata[0].axes = daydata[0].axes.reverse();
+
+	var radarwidth = 350,
+	radarheight = 350;
+	var cfg = {
+	w: radarwidth,
+	h: radarheight,
+	levels: 5,
+	};
+
+	var radar = RadarChart.chart();
+	radar.config(cfg);
+	var svg = d3.select("#radar").append("svg")
+	.attr("width", cfg.w * 2 + 150)
+	.attr("height", cfg.h * 1.25);
+
+	function render() {
+	var plot = svg.selectAll("g.plot").data([daydata, hourdata]);
+	plot.enter().append('g').classed('plot', 1);
+	plot.attr("transform", function(d,i) {return "translate(" + (20 + (i * (100 + cfg.w))) + "," + 20 + ")"; })
+	.call(radar);
+	}
+	render();
+}
+
 // Plots wordcloud
 function wordcloud(data) {
 	
@@ -225,12 +263,12 @@ function wordcloud(data) {
 		height = 450;
 		
 	var minmax = d3.extent(data, function(d) {return d.count; });
-	var s = d3.scale.log().domain(minmax).range([5, 150]);
+	var s = d3.scale.log().domain(minmax).range([16, 100]);
 	
 	
 	var cloud =	d3.layout.cloud().size([width, height])
 			.words(data.map(function(d) {
-				return {text: d.word, size: s(d.count*1.25)};
+				return {text: d.word, size: s(d.count)};
 			}))
 			.padding(3)
 			.rotate(function() {return ~~(Math.random() * 2) * 90; })
