@@ -19,6 +19,7 @@ import requests
 import sys
 import time
 
+import textminer
 
 logFormatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
@@ -46,22 +47,11 @@ logger.info("DB connection established to %s", MONGO_URL)
 
 CLIENT_ID = os.environ.get('CLIENT_ID')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+
+# Upper limit to number of posts retrieved from reddit
 post_limit = 500
-word_count_limit = 50
-
-
-def get_stopwords(filename):
-    """
-    Retrieves a set of stopwords for word cloud filtering.
-    """
-    words = set()
-    with open(filename, 'r') as f:
-        words.update( f.read().splitlines() )
-    f.close()
-    return words
-
-
-stopwords = get_stopwords("stopwords.txt")
+# Upper limit of phrases to display in word cloud
+word_limit = 50
 
 
 def is_valid(name):
@@ -92,6 +82,15 @@ def parse_date(secs):
     """
     date = datetime.datetime.fromtimestamp(secs, datetime.timezone.utc)
     return date.strftime("%d/%m/%y")
+ 
+ 
+def get_post_text(posts):
+    for post in posts:
+        post = post["data"]
+        try:
+            yield post["body"]
+        except:
+            yield post["selftext"]        
     
     
 def analyze(data):
@@ -105,8 +104,10 @@ def analyze(data):
     subreddits = defaultdict(lambda: defaultdict(int))
     hour_count = [0] * 24
     day_count = [0] * 7
-    wordcount = defaultdict(int)
     post_count = len(data["posts"])
+    
+    post_strings = get_post_text(data["posts"])
+    top_phrases, wordcount = textminer.rank_keyphrases(post_strings, word_limit)
     
     for post in data["posts"]:
         post = post["data"]
@@ -117,36 +118,24 @@ def analyze(data):
         hour_count[dt.hour] += 1
         day_count[dt.weekday()] += 1
         
-        score = int(post["score"])
+        score = int(post["score"]) - 1
         total_score += score
         
         sr = post["subreddit"]
         subreddits[sr]["count"] += 1
         subreddits[sr]["score"] += score
-        
-        try:
-            for word in post["body"].split():
-                word = re.sub("[^\w]", "", word).lower()
-                wordcount[word] += 1
-        except KeyError:
-            for word in post["selftext"].split():
-                word = re.sub("[^\w]", "", word).lower()
-                wordcount[word] += 1
-    
+       
     # Turn scores into average scores
     for v in subreddits.values():
         v["score"] = round(v["score"] / v["count"], 1)
         
-    words = sum(wordcount.values())
-    avg_words = words / post_count
-    karma_per_word = total_score / words
+    avg_words = wordcount / post_count
+    karma_per_word = total_score / wordcount
     avg_score = total_score / post_count
-    
-    # Filter out stopwords
-    c = Counter({k: v for (k,v) in wordcount.items() if k not in stopwords})
-    # Get most common words and parse them into a suitable format for D3
-    top_words = [{"word": k, "count": v} for (k,v) in c.most_common(word_count_limit)]
-    # Make the dictionary into a suitable format for D3
+
+    # Parse list of top_phrases into a suitable format for D3
+    top_phrases = [{"word": k, "count": v} for (k,v) in top_phrases]
+    # Make the subreddit dictionary into a suitable format for D3
     subreddits = [{"name": k, "data": v} for (k,v) in subreddits.items()]
     
     values = {"avg_score": avg_score,
@@ -156,8 +145,8 @@ def analyze(data):
               "hour_count": hour_count,
               "day_count": day_count,
               "subreddits": subreddits,
-              "top_words": top_words}
-              
+              "top_phrases": top_phrases}
+    
     data["computation"] = values
     return data
 
@@ -340,7 +329,7 @@ def handle_request(username, refresh):
                                subreddits = stats["subreddits"],
                                daydata = daydata,
                                hourdata = hourdata,
-                               wordcount = stats["top_words"])  
+                               wordcount = stats["top_phrases"])  
     except KeyError:
         # Something must be missing from the file, refresh it
         return handle_request(username, True)
