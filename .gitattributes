@@ -1,0 +1,4 @@
+/static/bootstrap/* linguist-vendored
+/static/font-awesome/* linguist-vendored
+/static/js/* linguist-vendored
+/static/js/plotlib.js linguist-vendored=false
