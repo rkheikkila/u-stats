@@ -124,6 +124,7 @@ hasnt
 have
 havent
 he
+hes
 hence
 her
 here
@@ -140,6 +141,7 @@ how
 however
 hundred
 i
+id
 ie
 if
 ill
@@ -331,9 +333,11 @@ wont
 would
 yet
 you
+youd
 youll
 your
 youre
 yours
 yourself
 yourselves
+youve
