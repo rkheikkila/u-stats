@@ -194,21 +194,21 @@ function activityPlot(posts) {
 		});
 		
 	svg.append('text')
-		.text('T')
+		.text('M')
 		.style('fill','#ccc')
 		.attr('text-anchor','middle')
 		.attr('dx','-20')
 		.attr('dy', cellSize + margin.top);
 
 	svg.append('text')
-		.text('T')
+		.text('W')
 		.style('fill','#ccc')
 		.attr('text-anchor','middle')
 		.attr('dx','-20')
 		.attr('dy', 3 * cellSize + margin.top);
 
 	svg.append('text')
-	    .text('S')
+	    .text('F')
 	    .attr('text-anchor','middle')
 	    .style('fill','#ccc')
 	    .attr('dx','-20')
