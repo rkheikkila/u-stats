@@ -3,7 +3,6 @@ reddit user-analytics app providing insights on how user spends time on reddit.
 Author: Rasmus Heikkila 2016
 """
 
-
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -13,6 +12,7 @@ from waitress import serve
 from collections import Counter, defaultdict
 import datetime
 import logging
+import logging.handlers
 import os
 import re
 import requests
@@ -21,32 +21,21 @@ import time
 
 import textminer
 
-logFormatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
-fileHandler = logging.FileHandler("syslog.log")
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-logger.addHandler(consoleHandler)
-
-MONGO_URL = os.environ.get('MONGODB_URI')
-if not MONGO_URL:
-    MONGO_URL = "mongodb://localhost:27017/rest"
-    
 app = Flask(__name__)
+app.config.from_object(os.environ["APP_CONFIG"])
 
-client = MongoClient(MONGO_URL)
+handler = logging.handlers.RotatingFileHandler(app.config["LOGGING_FILE"])
+formatter = logging.Formatter(app.config["LOGGING_FORMAT"])
+handler.setFormatter(formatter)
+app.logger.addHandler(handler)
+app.logger.setLevel(app.config["LOGGING_LEVEL"])
+
+mongo_uri = app.config["MONGO_URI"]
+client = MongoClient(mongo_uri)
 db = client.get_default_database()
 coll = db.docs
 coll.create_index("username")
-logger.info("DB connection established to %s", MONGO_URL)
-
-CLIENT_ID = os.environ.get('CLIENT_ID')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+app.logger.info("DB connection established to %s", mongo_uri)
 
 # Upper limit to number of posts retrieved from reddit
 post_limit = 500
@@ -172,7 +161,7 @@ class RedditStats():
         if retries == 0:
             return False
             
-        client_auth = requests.auth.HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET)   
+        client_auth = requests.auth.HTTPBasicAuth(app.config["CLIENT_ID"], app.config["CLIENT_SECRET"])
         post_data = {"grant_type": "client_credentials",
                      "duration": "permanent"}   
                      
@@ -183,13 +172,13 @@ class RedditStats():
             self.auth_token = r_json["access_token"]
             self.token_expiration_time = int(time.time()) + r_json["expires_in"]
             self.headers["Authorization"] = r_json["token_type"] + " " + self.auth_token
-            logger.info("%s successful", "Auth")
+            app.logger.info("%s successful", "Auth")
             return True
         except (requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
-            logger.error("Auth error: %s", str(e))
+            app.logger.error("Auth error: %s", str(e))
             return self.auth(retries=retries-1)
         except Exception as e:
-            logger.error("Auth error: %s", str(e))
+            app.logger.error("Auth error: %s", str(e))
             return False
             
     def retrieve_data(self, username, retries=2, force_reauth=False):
@@ -255,7 +244,7 @@ class RedditStats():
             """
             raise
         except Exception as e:
-            logger.error("Error retrieving data: %s", str(e))
+            app.logger.error("Error retrieving data: %s", str(e))
             return self.retrieve_data(username, retries=retries-1)
         
     
@@ -276,7 +265,7 @@ class RedditStats():
             data = analyze(data)
             res = coll.replace_one({"username": username}, data, upsert=True)
             if not res.acknowledged:
-                logger.warning("Failed to write %s's data to db", username)
+                app.logger.warning("Failed to write %s's data to db", username)
             return data
             
         if refresh:
@@ -355,7 +344,7 @@ def refresh():
           
 if __name__ == "__main__":
     s = RedditStats()
-    #app.run(debug=True)
+    app.run()
     port = int(os.environ.get('PORT', 5000))
-    serve(app, host="0.0.0.0", port=port)
+    #serve(app, host="0.0.0.0", port=port)
         
