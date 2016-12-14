@@ -1,49 +1,52 @@
 <!DOCTYPE html>
 <html>
-<head> 
+<head>
 <title>u-stats</title>
-<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <meta charset="UTF-8">
-<link rel="stylesheet" href="static/bootstrap/css/bootstrap.min.css">
-<link rel="stylesheet" href="static/font-awesome/css/font-awesome.min.css">
-<link rel="stylesheet" href="static/plotcss.css">
-<script src="static/js/jquery.js"></script>
-<script src="static/bootstrap/js/bootstrap.min.js"></script>
-<script src="static/js/d3.min.js"></script>
-<script src="static/js/radar-chart.min.js"></script>
-<script src="static/js/d3.layout.cloud.js"></script>
-<script src="static/js/d3-tip.js"></script>
-<script src="static/js/plotlib.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='plotcss.css') }}">
+<script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/radar-chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3.layout.cloud.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3-tip.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/plotlib.js') }}"></script>
 </head>
 
 <body style="text-align: center;">
 <div class="row-center" style="padding-left: 25%; padding-right: 25%; padding-top: 10px; padding-bottom: 5px;">
-	<form action="stats" method="GET">
-      <div class="input-group">
-        <span class="input-group-addon" id="user">/u/</span>
-        <input type="text" class="form-control" placeholder="Username" type="text" name="username">
-        <span class="input-group-btn">
-        <button class="btn btn-default" type="submit">Search</button>
-        </span>
-	  </div>
-	</form>
+	<form id="go">
+    <div class="input-group">
+      <span class="input-group-addon">/u/</span>
+      <input type="text" class="form-control" placeholder="Username" value="">
+      <span class="input-group-btn">
+      <button class="btn btn-default" type="submit">Search</button>
+      </span>
+      </div>
+  </form>
 </div>
-
-<div>
-  <h1 style="font-size: 50px;">Stats for /u/{{user}}</h1>
-  <h2 style="font-size: 20px;">based on the {{postcount}} most recent posts</h2>
+<div id="user">
+	<span class="span4">
+  	<h1 style="font-size: 50px;">Stats for /u/{{user}}</h1>
+		<span class="fa fa-spinner fa-spin" style="font-size:24px;"></span>
+	</span>
+  <h2 style="font-size: 20px;"></h2>
+</div>
+<div id="error" type="hidden">
+	<h1 style="font-size 20px;"></h1>
 </div>
 <br>
-<div class="container">
+<div id="info" class="container">
   <div class="row-fluid">
     <div class="col-md-2">
 	  <p class="text-muted">Data last refreshed</p>
 	  <div class="row">
 		<div class="col-md-5 col-md-offset-1">
-		  <form action="refresh" method="GET">
-		    <input type="hidden" name="username" value="{{user}}">
-		    <button class="btn btn-primary btn-xs" type="submit">Refresh</button>
-	      </form>
+			<button id="refresh" class="btn btn-primary btn-xs" type="button">Refresh</button>
 		</div>
 		<div class="col-md-5">
 	       <p><strong>{{refreshed}}</strong></p>
@@ -60,7 +63,7 @@
 	</div>
 	  <div class="col-md-2">
 	    <p class="text-muted">Total karma
-		  <i class="text-muted fa fa-exclamation-circle" data-toggle="tooltip" data-placement="right" title 
+		  <i class="text-muted fa fa-exclamation-circle" data-toggle="tooltip" data-placement="right" title
 		  data-original-title="Sum of individual post scores. Karma reported by reddit may be different."></i>
 		</p>
 		<p><strong>{{total_karma}}</strong></p>
@@ -77,13 +80,13 @@
 </div>
 <hr>
 <div>
-<h2 style="font-size: 30px;">Subreddits</h2>
+	<h2 style="font-size: 30px;">Subreddits</h2>
   <select id="selector">
     <option value="count">Posts</option>
     <option value="score">Average score</option>
   </select>
   <div id="barplot" class="graph"></div>
-  <h2 style="font-size: 30px;">Average post score is {{avgscore}}</h2>
+  <h2 style="font-size: 30px;"></h2>
 </div>
 <br>
 <hr>
@@ -97,7 +100,7 @@
 <br>
 <div>
   <h2 style="font-size: 30px;">Distribution of posts by day and hour
-  <i class="text-muted fa fa-exclamation-circle" style="font-size: 15px;" data-toggle="tooltip" data-placement="right" title 
+  <i class="text-muted fa fa-exclamation-circle" style="font-size: 15px;" data-toggle="tooltip" data-placement="right" title
 		  data-original-title="Time is your local time."></i></h2>
   <br>
   <div id="radar" class="graph"></div>
@@ -118,28 +121,32 @@
 
 
 <script>
+$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+var username = {{user|tojson|safe}};
 // Initialize tooltips
-$(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip(); 
+$(document).ready(function() {
+    $('[data-toggle="tooltip"]').tooltip();
+		getUserData(username, false);
 });
 
-// Draw plot for subreddit stats
-var subreddits = {{subreddits|tojson|safe}};
-barplot(subreddits);
+$("#go").submit(function(e) {
+	e.preventDefault();
+	var target = $(this).find("input").val();
+	var url = $SCRIPT_ROOT + "/u/" + target;
+  window.location.replace(url);
+})
 
-// Draw plot for post stats
-var posts = {{posts|tojson|safe}};
-activityPlot(posts);
+$("#refresh").click(function() {
+	$(this).text("Refreshing..");
+	getUserData(username, true);
+	$(this).text("Refresh");
+});
 
-var daydata = {{daydata|safe}};
-var hourdata = {{hourdata|safe}};
-
-radarchart(daydata, hourdata);
-
-var wordcount = {{wordcount|tojson|safe}};
-wordcloud(wordcount);	
-
+$(document).on({
+	ajaxStart: function() { $(".fa-spin").show(); },
+	ajaxStop: function() { $(".fa-spin").hide(); }
+});
 
 </script>
-</body>		
+</body>
 </html>

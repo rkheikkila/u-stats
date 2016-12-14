@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
-<head> 
+<head>
   <title>u-stats</title>
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
-  <meta  charset="UTF-8">
-  <link rel="stylesheet" href="static/bootstrap/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+  <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+  <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
 </head>
 <style>
 
@@ -21,14 +23,14 @@ body {
 
 <div class="container-fluid">
 <div class="vertical-center">
-  <img src="static/logo.png">
+  <img src="{{ url_for('static', filename='logo.png') }}">
   <h2>reddit user analytics</h2>
   <br>
 <div class="row-center" style="padding-left: 25%; padding-right: 25%;">
-  <form action="stats" method="GET">
+  <form id="go">
     <div class="input-group">
-      <span class="input-group-addon" id="user">/u/</span>
-      <input type="text" class="form-control" placeholder="Username" type="text" name="username">
+      <span class="input-group-addon">/u/</span>
+      <input type="text" class="form-control" placeholder="Username" value="">
       <span class="input-group-btn">
         <button class="btn btn-default" type="submit">Search</button>
       </span>
@@ -47,8 +49,15 @@ body {
 	<h2 style="font-size: 10px;">Rasmus Heikkilä, 2016 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
 </div>
 
-<script src="static/js/jquery.js"></script>
-<script src="static/bootstrap/js/bootstrap.min.js"></script>
+<script>
+$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+$("#go").submit(function(e) {
+  e.preventDefault();
+  var target = $(this).find("input").val();
+  var url = $SCRIPT_ROOT + "/u/" + target;
+  window.location.replace(url);
+});
+</script>
 
 </body>
 </html>
