@@ -22,6 +22,14 @@ def parse_date(secs):
 
 
 def get_post_text(posts):
+    """
+    Helper function for retrieving text content of posts.
+
+    Args:
+        posts: list of dictionaries
+    Returns:
+        generator of strings (post content)
+    """
     for post in posts:
         post_data = post["data"]
         try:
@@ -32,9 +40,18 @@ def get_post_text(posts):
 
 def process(data):
     """
-    Compute some stats from the reddit posts and add them
-    to the dictionary passed as the parameter.
+    Computes certain statistics from a user's post data.
 
+    Args:
+        data: dictionary containing key "posts".
+    Data includes:
+    - Post count and average karma by subreddit
+    - Post count by day and hour
+    - Frequent keyphrases
+
+    Returns:
+        Original dictionary with new dictionary under key "analytics"
+        If key "posts" is missing from data, returns the dictionary unchanged
     """
     if not data.get("posts"):
         return data

@@ -59,8 +59,10 @@ def valid(name):
 
 def retrieve_data(username):
     """
-    Returns dictionary containing all data. If refresh is not forced,
-    attempts to retrieve data from mongoDB before connecting to reddit API.
+    Returns a dictionary containing user data from reddit API and
+    saves it in the database if successful.
+
+    If data retrieval, returns a dictionary with "error" key.
     """
     result = reddit.api.user(username)
     if not "error" in result:
@@ -127,6 +129,6 @@ def stats(name):
 
 
 if __name__ == "__main__":
-    app.run()
+    #app.run()
     port = int(os.environ.get('PORT', 5000))
-    #serve(app, host="0.0.0.0", port=port)
+    serve(app, host="0.0.0.0", port=port)

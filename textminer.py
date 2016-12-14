@@ -81,13 +81,14 @@ def extract_chunks(text):
     
 def rank_keyphrases(texts, top_n=50):
     """
-    Rank keyphrases with a simple frequency distribution. This approach
-    favours unigrams, which is fine since unigrams are better suited 
+    Rank keyphrases with a simple frequency distribution.
+
+    This approach favours unigrams, which is fine since unigrams are better suited
     for a word cloud.
-    Parameters:
-    texts - an iterable of strings
-    top_n - number of keyphrases returned. If the amount of text is insufficient,
-    less than top_n keyphrases might be returned.
+    Args:
+        texts - an iterable of strings
+        top_n - number of keyphrases returned. If the amount of text is insufficient,
+                less than top_n keyphrases might be returned.
     Returns: 
     The keyphrases and a total count of words tokenized.
     """

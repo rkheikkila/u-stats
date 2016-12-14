@@ -58,6 +58,13 @@ class RedditAPI(object):
     def _send_request(self, url, params, retries=1):
         """
         Send a HTTP GET request to the reddit API.
+
+        Args:
+            url: target url
+            params: request parameters
+            retries: number of retries
+        Returns:
+            Retrieved data as a dictionary or dictionary with key "error"
         """
         if not retries:
             return {"error": "Timeout"}
@@ -91,8 +98,13 @@ class RedditAPI(object):
     def user(self, username):
         """
         Retrieve user information and latest posts from the reddit API.
-        Returns a dictionary containing username, some basic user information
-        and latest posts. In case of failure, returns None.
+
+        Args:
+            username: reddit username, expected to be valid but not necessarily existent
+        Returns:
+            dictionary containing username, some basic user information, time or retrieval
+            and latest posts.
+            If an exception is countered, returns a dictionary with key "error"
         """
 
         url = self.api_url + username
