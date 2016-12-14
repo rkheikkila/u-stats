@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}{% endblock %}</title>
+  <meta charset="UTF-8">
+  {% block styles %}
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+  {% endblock %}
+  {% block scripts %}
+  <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+  <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+  {% endblock %}
+</head>
+<style>
+  body {
+    height: 100%;
+    text-align: center;
+  }
+</style>
+
+<body>
+{% block content %}
+{% endblock %}
+
+<div class="footer navbar-fixed-bottom">
+  <h2 style="font-size: 10px;">Rasmus Heikkilä, 2016 <a href="https://github.com/rkheikkila/u-stats">GitHub</a></h2>
+</div>
+
+</body>
+</html>
