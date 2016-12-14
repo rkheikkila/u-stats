@@ -105,9 +105,9 @@ def stats(name):
     if "error" in user_data:
         return jsonify(**user_data)
 
-    if not user_data.get("posts") or user_data.get("analytics"):
+    if not (user_data.get("posts") or user_data.get("analytics")):
         return jsonify(error="No posts were found!")
-    
+
     statistics = user_data["analytics"]
 
     payload = {
