@@ -123,7 +123,8 @@ def stats(name):
         "subreddits": statistics["subreddits"],
         "daydata": statistics["by_day"],
         "hourdata": statistics["by_hour"],
-        "wordcount": statistics["top_phrases"]
+        "wordcount": statistics["top_phrases"],
+        "recommendations": statistics["recommendations"]
     }
     return jsonify(**payload)
 

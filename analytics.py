@@ -1,7 +1,11 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 import datetime
+import time
 
+from recommender import Recommender
 import textminer
+
+recommender = Recommender()
 
 # Upper limit of phrases to display in word cloud
 word_limit = 50
@@ -89,6 +93,9 @@ def process(data):
     karma_per_word = total_score / wordcount
     avg_score = total_score / post_count
 
+    counts = dict((k, v["count"]) for k, v in subreddits.items())
+    recommended = recommender.get_similar(counts)
+
     # Parse list of top_phrases into a suitable format for D3
     top_phrases = [{"word": k, "count": v} for (k, v) in top_phrases]
     # Make the subreddit dictionary into a suitable format for D3
@@ -106,11 +113,11 @@ def process(data):
               "by_hour": hour_data,
               "by_day": day_data,
               "subreddits": subreddits,
-              "top_phrases": top_phrases}
+              "top_phrases": top_phrases,
+              "recommendations": recommended}
 
     data["analytics"] = values
     return data
-
 
 
 
