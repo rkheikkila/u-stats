@@ -46,6 +46,22 @@ function display(data) {
     // Add average score under barplot
     $("#barplot + h2").text("Average post score is " + data.avgscore);
   }
+  // Insert recommendations
+  $("#recommendations > li").remove();
+  if ("recommendations" in data) {
+    var n = 5;
+    for (var i = 0; i < n; i++) {
+      var target = "r/" + data.recommendations[i];
+      var link = "http://www.reddit.com/" + target;
+      $("#recommendations")
+        .append($("<li>")
+        .append($("<a>")
+          .attr("href", link)
+          .attr("target", "_blank")
+          .text(target)
+        ));
+    }
+  }
 
   // Draw plot for post stats
   if ("posts" in data) {
